@@ -15,21 +15,23 @@
 #include <time.h>
 #include <ctime>
 
-#include "catch.hpp"
+// #define CATCH_CONFIG_MAIN
+// #include "catch.hpp"
 
 using namespace std;
 using namespace arma;
+ofstream ofile;
 
 int main(){
 
     // the essentials for our specific case [-d^2/d\rho^2 + wr^2*\rho^2 + 1/\rho]u(\rho) = \lambda u(\rho)
-    int n = 10;                         // number of steps
+    int n = 100;                        // number of steps
     double rhomax = 10;                 // maximum radial distance
     double h = rhomax/(n+1);            // step size
     double hh = h*h;                    // step size squared
     double d = 2./(hh);                 // diagonal elements
     double e = -(1./(hh));              // off-diagonal elements
-    double wr = 0.5;                    // the oscillator potential for the interacting case: 0.01, 0.5, 1, 5
+    double wr = 0.01;                      // the oscillator potential for the interacting case: 0.01, 0.5, 1, 5
     double wr2 = wr*wr;                 // w_r^2 as used in the potential
 
 
@@ -71,7 +73,7 @@ int main(){
 
     // cout << "Eigenvectors:" << endl << eigvec << endl;
 
-    cout << "Eigenvalues:" << endl << eigval << endl;
+    // cout << "Eigenvalues(Arma):" << endl << eigval << endl;
 
     //--------------------------------------------------
 
@@ -79,7 +81,7 @@ int main(){
     // while loop to run the jacobi rotation until the eigenvalues are found
     double tolerance = 1.0E-10;
     int iterations = 0;
-    int maxiter = 5500;
+    int maxiter = 16000;
     double maxm = 1;
     while ( maxm > tolerance && iterations <= maxiter)
     {
@@ -95,6 +97,25 @@ int main(){
                 }
             }
         }
+
+//------------------------- Test to verify that the above code finds the non-diagonal element with the greatest distance from 0 -----------------------------------
+
+
+        // intialize a new matrix with 0's on the diagonal so that the Armadillo function .max doesn't return a diagonal value
+        // mat B = A;
+        // for (int i=0; i<n; i++){
+        //     B(i,i) = 0;
+        // }
+
+        // if ((maxm == B.max()) || (maxm = fabs(B.min()))){
+        //      cout << "Maximum off diagonal successfully found!" << endl;
+        // }
+        // else {
+        //     cout << "Failure!" << endl;
+        // }
+
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 
         // do the matrix rotation focusing on the element discovered in the previous step:
 
@@ -143,10 +164,48 @@ int main(){
           }
 
         iterations++;
+
+//------------------------------------------------------ Testing to show that the eigenvalues are preserved through rotation --------------------------------------
+
+        // vec eval;
+        // mat evec;
+        // eig_sym(eval,evec,A);
+
+        // cout << "eigval" << endl << eigval << endl;
+        // cout << "post rotation" << endl << eval << endl;
+
+        // int check = 0;
+
+        // for ( int l = 0; l < n; l++) {
+        //     if (eval(l) == eigval(l)){
+        //          check++;
+        //      }
+        // }
+
+        // if (check = n){
+        //     cout << "Eigenvalues preserved!!" << endl;
+        // }
+        // else {
+        //     cout << "BOOOOO!!!!" << endl;
+        // }
+
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------------
     }
-    // cout << "The eigenvector matrix:" << endl << R << endl;
-    // cout << "Eigenvalues (Jacobi):" << endl;
-    // for (int i = 0; i<n; i++){
-    //   cout << A(i,i) << endl;
-    // }
+
+    vec S = sort(diagvec(A));
+    cout << S << endl;
+
+
+
+    ofstream myfile;
+    myfile.open("eigenvalues.txt");
+    myfile << "N = " << n << ", rho_max = " << rhomax << ", iterations = " << maxiter << endl;
+    myfile << "Armadillo:" << setw(15) << "Jacobi:" << endl;
+
+    for (int j = 0; j <=2; j++){
+        myfile << eigval(j) << setw(15) << S(j) << endl;
+    }
+
+    myfile.close();
+
 }
